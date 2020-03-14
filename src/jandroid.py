@@ -43,6 +43,7 @@ class Jandroid:
         self.bool_generate_graph = False
         self.graph_type = 'neo4j'
         self.analysis_platform = 'android'
+        self.path_to_templates = None
         
         # Set values from function arguments.
         if path_app_folder != None:
@@ -110,6 +111,15 @@ class Jandroid:
                    + 'supported. Support for other files to be added.'
         )
         self.argparser.add_argument(
+            '-t',
+            '--templates',
+            type = str,
+            action = 'store',
+            help = 'folder containing templates that will be '
+                   + 'applied to the current'
+                   + 'analysis session. '
+        )
+        self.argparser.add_argument(
             '-e',
             '--extract',
             choices = ['device', 'ext4', 'img'],
@@ -167,9 +177,12 @@ class Jandroid:
 
         # Check for templates.
         #  If they don't exist, there's nothing to check.
-        if [f for f in os.listdir(self.path_to_templates)
-                if (f.endswith('.template')
-                and not f.startswith('.'))] == []:
+        templates_check = []
+        for dirName, subdirList, fileList in os.walk(self.path_to_templates):
+            for f in fileList:
+                if (f.endswith('.template') and not f.startswith('.')):
+                    templates_check.append(f)
+        if templates_check == []:
             logging.critical(
                 'Template directory contains no JSON templates. '
                 + 'Exiting...'
@@ -271,11 +284,12 @@ class Jandroid:
             'jandroid.conf'
         )        
         # Path to templates.
-        self.path_to_templates = os.path.join(
-            self.path_base_dir,
-            'templates',
-            self.analysis_platform
-        )
+        if self.path_to_templates == None:
+            self.path_to_templates = os.path.join(
+                self.path_base_dir,
+                'templates',
+                self.analysis_platform
+            )
 
     def __fn_set_log_level(self):
         """Sets the level for logging based on config file."""
@@ -348,6 +362,10 @@ class Jandroid:
             self.bool_generate_graph = True
             self.graph_type = args.graph
 
+        # Check if templates path is set
+        if args.templates:
+            self.path_to_templates = args.templates
+
     def __fn_test_graph_handler(self):
         """Tests connection to neo4j graph."""        
         # Instantiate graph handler.
@@ -378,7 +396,8 @@ class Jandroid:
         # Instantiate template parser.
         inst_template_parser = TemplateParser(
             self.path_base_dir,
-            self.analysis_platform
+            self.analysis_platform,
+            self.path_to_templates
         )
         try:
             self.master_template_object = \

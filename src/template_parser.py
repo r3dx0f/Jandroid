@@ -13,7 +13,7 @@ class TemplateParser:
     A separate parser class is defined for each analysis platform.
     """
     
-    def __init__(self, arg_base_dir, arg_mode):
+    def __init__(self, arg_base_dir, arg_mode, arg_path_template):
         """Sets paths and modes."""
         # Set paths.
         self.path_to_templates = os.path.join(
@@ -21,10 +21,12 @@ class TemplateParser:
             'templates',
             arg_mode
         )
+        # Set Templates Path
+        self.path_to_templates = arg_path_template
         # Set mode.
         self.analysis_mode = arg_mode
         # Variable to hold list of template paths.
-        self.list_of_template_files = None        
+        self.list_of_template_files = []  
 
     def fn_create_master_template_object(self):
         """Creates a "master template object" from templates.
@@ -55,16 +57,13 @@ class TemplateParser:
         This function simply enumerates all .template files within that 
         folder and stores the filepaths to them as a list in a class property.
         """
-        # Essentially, just look for files with the .json extension
+        # Essentially, just look for files with the .template extension
         #  within the templates folder and
         #  add (paths to) them to a list.
-        self.list_of_template_files = [
-            os.path.join(self.path_to_templates, name)
-            for name in os.listdir(self.path_to_templates)
-                if ((os.path.isfile(
-                    os.path.join(self.path_to_templates, name)
-                )) and (name.endswith('.template')))
-        ]
+        for dirName, subdirList, fileList in os.walk(self.path_to_templates):
+            for f in fileList:
+                if (f.endswith('.template') and not f.startswith('.')):
+                    self.list_of_template_files.append(os.path.join(dirName, f))
         logging.info(
             str(len(self.list_of_template_files))
             + ' potential template(s) found.'
